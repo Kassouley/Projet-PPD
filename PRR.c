@@ -204,15 +204,16 @@ void projection(double* A, int* I_A, int* J_A, int nz, int n, int  m,
  * 
  * @return a boolean value.
  */
-int est_precision_suffisante(float epsilon, double* A, int* I_A, int* J_A, int nz, double* qi, double* lambda, int N, int m)
+int est_precision_suffisante(float epsilon, double* A, int* I_A, int* J_A, int nz, 
+												double* qi, double* lambda, int N, int m)
 {	
 	int 		i, j;
-	double*	 	q = (double*)malloc(sizeof(double) * N);
-	double*	 	A_x_q = NULL;
-	double*	 	lambda_x_q = (double*)malloc(sizeof(double) * N);
-	double*	 	difference = (double*)malloc(sizeof(double) * N);
-	double		precision = 0;
-	double 		precision_max = 0;
+	double*	 	A_x_q 			= NULL;
+	double*	 	q 		   		= (double*)malloc(sizeof(double) * N);
+	double*	 	lambda_x_q 		= (double*)malloc(sizeof(double) * N);
+	double*	 	difference 		= (double*)malloc(sizeof(double) * N);
+	double		precision 		= 0;
+	double 		precision_max 	= 0;
 
 	for (i = 0; i < m; i++)
 	{
