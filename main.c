@@ -1,10 +1,12 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include "PRR.h"
 #include <string.h>
 #include <time.h>
-#include "mmio.h"
 #include <omp.h>
+#include "PRR.h"
+#include "mmio.h"
+
+int debug_point = -1;
 
 int main(int argc, char* argv[])
 {	
@@ -17,6 +19,12 @@ int main(int argc, char* argv[])
 	int 	m ;
 	double 	precision = 0.1;
 	double*	A_eigen_vector = NULL;
+	double t0; 
+	double t0_cpu; 
+	double t1; 
+	double t1_cpu; 
+	double temps_reel;
+	double temps_CPU;
 	FILE * output = NULL;
 	omp_set_num_threads(atoi(argv[5]));
 
@@ -44,6 +52,11 @@ int main(int argc, char* argv[])
 	{
 		precision = atof(argv[4]);
 	}
+	if ( argc >= 7 )
+	{
+		debug_point = atoi(argv[6]);
+	}
+
 
 	m = atoi(argv[3]);
 	
@@ -67,17 +80,18 @@ int main(int argc, char* argv[])
     }
 	
 	
-    clock_t start, end;
-    double cpu_time_used;
-
-    start = clock(); // démarre le chronomètre
-
+	
+	t0 = omp_get_wtime(); 
+	t0_cpu = clock(); 
 
 	A_eigen_vector = PRR(A, I_A, J_A, nz, n1, m, precision);
 
-    end = clock(); // arrête le chronomètre
-    cpu_time_used = ((double) (end - start)) / CLOCKS_PER_SEC; // calcule le temps d'exécution en secondes
-    printf("Temps d'execution : %f secondes\n", cpu_time_used);
+	t1 = omp_get_wtime(); 
+	t1_cpu = clock(); 
+	temps_reel= t1 - t0;
+	temps_CPU=(t1_cpu-t0_cpu)/CLOCKS_PER_SEC;
+
+    printf("Temps d'execution : %f secondes / %f clocks\n", temps_reel,temps_CPU);
 
 
 

@@ -4,6 +4,8 @@
 #include "matrix_vector.h"
 #include "PRR.h"
 
+extern int debug_point;
+
 /**
  * It computes the eigenvectors of a matrix A using the PRR algorithm
  * 
@@ -34,20 +36,20 @@ double* PRR(double* A, int* I_A, int* J_A, int nz, int n, unsigned int m, double
 	int compteur 	= 0;
 
    
-    x       = (double*) calloc(n, sizeof(double));
-    y0      = (double*) malloc(n * sizeof(double));
+    x       = (double*) calloc(n,   sizeof(double));
+    y0      = (double*) malloc(n *  sizeof(double));
     Bm      = (double*) calloc(m*m, sizeof(double));
     Bm_1    = (double*) calloc(m*m, sizeof(double));
-    Vm      = (double*) calloc(m*n, sizeof(double));
+    Vm      = (double*) calloc(n*m, sizeof(double));
     Em      = (double*) calloc(m*m, sizeof(double));
     Fm      = (double*) calloc(m*m, sizeof(double));
-    lambda  = (double*) malloc(m * sizeof(double));
-    ui      = (double*) malloc(m*m*sizeof(double));
-    qi      = (double*) calloc(m*n, sizeof(double));
+    lambda  = (double*) malloc(m *  sizeof(double));
+    ui      = (double*) malloc(m*m* sizeof(double));
+    qi      = (double*) calloc(n*m, sizeof(double));
     
 	
     /** Initialisation of x */
-	#pragma omp parallel for private(i)
+	//#pragma omp parallel for private(i)
 	for (i = 0; i < n; i++)
 	{
 		x[i]=0;
@@ -56,36 +58,43 @@ double* PRR(double* A, int* I_A, int* J_A, int nz, int n, unsigned int m, double
 
 	do
 	{
-		// print_matrice("x", x, N, 1);
 		normalisation(&y0, x, n);
-		// print_matrice(y0, N, 1);
 		projection(A, I_A, J_A, nz, n, m, y0, &Bm, &Bm_1, &Vm);
-		// print_matrice("Bm", Bm, m, m);
-		// print_matrice("Bm-1", Bm_1, m, m);
-		// print_matrice("Vm", Vm, N, m);
+
+		if(compteur == debug_point)
+		{
+			print_matrice("x", x, n, 1);
+			print_matrice("y0",y0, n, 1);
+			print_matrice("Bm", Bm, m, m);
+			print_matrice("Bm-1", Bm_1, m, m);
+			print_matrice("Vm", Vm, n, m);
+		}
 
 		inverse(&Em, Bm_1, m);
-		// print_matrice("Em", Em,m,m);
-
 		produit_matrice_matrice(&Fm, Em, Bm, m, m);
-		// print_matrice("Fm", Fm,m,m);
-
 		calculer_vecteurs_propres(Fm,  m, &lambda, &ui);
-		// print_matrice("Eigein vector", vecteur_propre_A,m,m);
-		// print_matrice("Eigein value", lambda,m,1);
-		
         produit_matrice_matrice(&qi, Vm, ui, n, m);
-		// print_matrice("qi", qi,N,m);
+
+		if(compteur == debug_point)
+		{
+			print_matrice("Em", Em,m,m);
+			print_matrice("Fm", Fm,m,m);
+			print_matrice("Eigein vector", ui,m,m);
+			print_matrice("Eigein value", lambda,m,1);
+			print_matrice("qi", qi, n, m);
+			break;
+		}
 		
-		compteur++;
 		printf("compteur : %d \t", compteur);
 		est_precis = est_precision_suffisante(precision, A, I_A, J_A, nz, qi, lambda, n, m);
 		if (!est_precis)
 		{
 			combinaison_lineaire(&x, qi, n, m);
-			// print_matrice("x", x, N, 1);
 		}
-		// break;
+
+		
+		compteur++;
+		
 	} while (!est_precis);
 
 	free(x);
@@ -125,14 +134,14 @@ void projection(double* A, int* I_A, int* J_A, int nz, int n, int  m,
 
 	yk_1 = (double*)malloc(sizeof(double) * n);
 	
-	#pragma omp parallel for private(i)
+	//#pragma omp parallel for private(i)
 	for (i = 0; i < n; i++)
 	{
 		(*Vm)[i*m] = y0[i];
 	}
 	(*Bm_1)[0] = produit_scalaire(y0,y0,n);
 	
-	#pragma omp parallel for private(i)
+	//#pragma omp parallel for private(i)
 	for (i = 0; i < n; i++)
 	{
 		yk_1[i] = y0[i];
@@ -143,7 +152,7 @@ void projection(double* A, int* I_A, int* J_A, int nz, int n, int  m,
 		yk = produit_matrice_vecteur(A, I_A, J_A, yk_1, n, nz, n);
 		
 		
-		#pragma omp parallel for private(i)
+		//#pragma omp parallel for private(i)
 		for (i = 0; i < n; i++)
 		{
 			(*Vm)[i*m+k] = yk[i];
@@ -153,7 +162,7 @@ void projection(double* A, int* I_A, int* J_A, int nz, int n, int  m,
 		scalaire2 = produit_scalaire(yk, yk, n);
 		
 		
-		#pragma omp parallel for schedule(dynamic) private(i)
+		//#pragma omp parallel for schedule(dynamic) private(i)
 		for (i = 0; i <= (2*k); i++)
 		{
 			if (2*k-i < m)
@@ -174,13 +183,12 @@ void projection(double* A, int* I_A, int* J_A, int nz, int n, int  m,
 			}
 		}
 		
-		#pragma omp parallel for private(i)
+		//#pragma omp parallel for private(i)
 		for (i = 0; i < n; i++)
 		{
 			yk_1[i] = yk[i];
 		}
 		free(yk);
-		
 	}
 	yk = produit_matrice_vecteur(A, I_A, J_A, yk_1, n, nz, n);
 	(*Bm)[(m-1)*m+(m-1)] = produit_scalaire(yk, yk_1, n);

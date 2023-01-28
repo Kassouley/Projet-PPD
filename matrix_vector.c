@@ -17,7 +17,7 @@
 void combinaison_lineaire(double** x, double* qi, int N, int m)
 {
 	int i, j;
-    #pragma omp parallel for schedule(dynamic) private(i,j)
+    //#pragma omp parallel for schedule(dynamic,N/2) private(i,j)
 	for (i = 0; i < N; i++)
 	{
 		(*x)[i] = 0;
@@ -132,6 +132,7 @@ void produit_matrice_matrice(double** out, double* A, double* B, int lignes_A, i
 {
 	int i, j, k;
 	double tmp;
+	//#pragma omp parallel for schedule(dynamic) private(i, j, k, tmp)
 	for (i = 0; i < lignes_A; i++)
 	{
 		for (j = 0; j < colonnes_B; j++)
