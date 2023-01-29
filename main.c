@@ -60,7 +60,7 @@ int main(int argc, char* argv[])
 
 	m = atoi(argv[3]);
 	
-	if ( m < 2)
+	if ( m < 2 )
 	{
 		printf("Pade-Rayleigh-Ritz Algorithm :\n\tErreur : le 3e argument [m] doit être superieur à 1\n\tUtilisez l'option -h pour plus d'information.\n");
 		exit(EXIT_FAILURE);

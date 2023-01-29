@@ -179,7 +179,7 @@ void inverse(double** out, double * A, int n)
  * 
  * @return The eigenvalues and eigenvectors of the matrix A.
  */
-void calculer_vecteurs_propres(double* A, int n, double** lambda, double** ui)
+void calculer_elements_propres(double* A, int n, double** lambda, double** ui)
 {
 	int                             i, j;
     gsl_matrix_view                 mat_A = gsl_matrix_view_array(A, n, n);

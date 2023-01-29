@@ -72,7 +72,7 @@ double* PRR(double* A, int* I_A, int* J_A, int nz, int n, unsigned int m, double
 
 		inverse(&Em, Bm_1, m);
 		produit_matrice_matrice(&Fm, Em, Bm, m, m);
-		calculer_vecteurs_propres(Fm,  m, &lambda, &ui);
+		calculer_elements_propres(Fm,  m, &lambda, &ui);
         produit_matrice_matrice(&qi, Vm, ui, n, m);
 
 		if(compteur == debug_point)
