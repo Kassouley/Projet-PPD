@@ -8,6 +8,8 @@
 #ifndef PRR_H
 #define PRR_H
 
+#define MAX_ITERATION 10000
+
 double* PRR(double* A, int* I_A, int* J_A, int nz, int n, unsigned int m, double precision);
 void 	projection(double* A, int* I_A, int* J_A, int nz, int n, int  m, 
 					double* y0, double** Bm, double** Bm_1, double** Vm);

@@ -14,11 +14,13 @@
  * @param N size of q(i)
  * @param m number of vector q(i)
  */
-void combinaison_lineaire(double** x, double* qi, int N, int m)
+void combinaison_lineaire(double** x, double* qi, int n, int m)
 {
 	int i, j;
-    //#pragma omp parallel for schedule(dynamic,N/2) private(i,j)
-	for (i = 0; i < N; i++)
+	int nb_threads = omp_get_num_threads();
+
+    #pragma omp parallel for schedule(dynamic,n/nb_threads) private(i,j)
+	for (i = 0; i < n; i++)
 	{
 		(*x)[i] = 0;
 		for (j = 0; j < m; j++)
@@ -39,9 +41,10 @@ void combinaison_lineaire(double** x, double* qi, int N, int m)
 void normalisation(double** out, double* x, int taille_x)
 {
 	int     i;
-	double  n = norme(x, taille_x);
+	double  n 		   = norme(x, taille_x);
+	int 	nb_threads = omp_get_num_threads();
 
-	#pragma omp parallel for schedule(dynamic) private(i)	
+	#pragma omp parallel for schedule(dynamic, taille_x/nb_threads) private(i)	
 	for (i = 0; i < taille_x; i++)
 	{
 		(*out)[i] = x[i] / n;
@@ -59,9 +62,10 @@ void normalisation(double** out, double* x, int taille_x)
 double norme(double* v, int taille_v)
 {
 	int 	i;
-	double 	res = 0;
-	
-	//#pragma omp parallel for schedule(dynamic) private(i) reduction(+:res) 
+	double 	res 	   = 0;
+	int 	nb_threads = omp_get_num_threads();
+
+	#pragma omp parallel for schedule(dynamic, taille_v/nb_threads) private(i) reduction(+:res) 
 	for (i = 0; i < taille_v; i++)
 	{
 		res += v[i]*v[i];
@@ -81,9 +85,10 @@ double norme(double* v, int taille_v)
 double produit_scalaire(double* x, double* y, int taille)
 {
 	int     i;
-	double  res = 0;
+	double  res 	   = 0;
+	int 	nb_threads = omp_get_num_threads();
 	
-	//#pragma omp parallel for schedule(dynamic) reduction(+:res) private(i)
+	#pragma omp parallel for schedule(dynamic, taille/nb_threads) reduction(+:res) private(i)
 	for (i = 0; i < taille; i++)
 	{
 		res += x[i] * y[i];
@@ -108,9 +113,10 @@ double produit_scalaire(double* x, double* y, int taille)
 double* produit_matrice_vecteur(double* A, int* I_A, int* J_A, double* v, int lignes_A, int nz, int taille_v)
 {
 	int     i;
-	double* res = (double*)calloc(lignes_A, sizeof(double));
+	double* res 		= (double*)calloc(lignes_A, sizeof(double));
+	int 	nb_threads  = omp_get_num_threads();
 	
-    //#pragma omp parallel for schedule(dynamic) reduction(+:res[:lignes_A]) private(i)
+    #pragma omp parallel for schedule(dynamic, nz/nb_threads) reduction(+:res[:lignes_A]) private(i)
     for (i = 0; i < nz; i++) 
 	{
         res[I_A[i]] += A[i] * v[J_A[i]];
@@ -132,13 +138,12 @@ void produit_matrice_matrice(double** out, double* A, double* B, int lignes_A, i
 {
 	int i, j, k;
 	double tmp;
-	//#pragma omp parallel for schedule(dynamic) private(i, j, k, tmp)
+	#pragma omp parallel for schedule(dynamic) private(i, j, k, tmp) collapse(2)
 	for (i = 0; i < lignes_A; i++)
 	{
 		for (j = 0; j < colonnes_B; j++)
 		{
 			tmp = 0;
-            //#pragma omp parallel for schedule(dynamic) reduction(+:tmp) private(k)
 			for (k = 0; k < colonnes_B; k++)
 			{
 				tmp += A[i*colonnes_B+k] * B[k*colonnes_B+j];
@@ -182,15 +187,16 @@ void inverse(double** out, double * A, int n)
 void calculer_elements_propres(double* A, int n, double** lambda, double** ui)
 {
 	int                             i, j;
-    gsl_matrix_view                 mat_A = gsl_matrix_view_array(A, n, n);
-    gsl_vector_complex*             eval  = gsl_vector_complex_alloc (n);
-    gsl_matrix_complex*             evec  = gsl_matrix_complex_alloc (n, n);
-    gsl_eigen_nonsymmv_workspace*   w     = gsl_eigen_nonsymmv_alloc(n);
+	gsl_matrix_view                 mat_A 	= gsl_matrix_view_array(A, n, n);
+	gsl_vector_complex*             eval  	= gsl_vector_complex_alloc (n);
+	gsl_matrix_complex*             evec  	= gsl_matrix_complex_alloc (n, n);
+	gsl_eigen_nonsymmv_workspace*   w     	= gsl_eigen_nonsymmv_alloc(n);
 
     gsl_eigen_nonsymmv(&mat_A.matrix, eval, evec, w);
     gsl_eigen_nonsymmv_free(w);
     gsl_eigen_nonsymmv_sort(eval, evec, GSL_EIGEN_SORT_ABS_ASC);
 
+	#pragma omp parallel for schedule(dynamic) private(i, j)
     for (i = 0; i < n; i++)
 	{
 		(*lambda)[i] = GSL_REAL(gsl_vector_complex_get(eval,i));

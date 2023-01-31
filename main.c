@@ -5,13 +5,14 @@
 #include <omp.h>
 #include "PRR.h"
 #include "mmio.h"
+#include "matrix_vector.h"
 
 int debug_point = -1;
 
 int main(int argc, char* argv[])
 {	
 	int 	i, j;
-	double* A = NULL;                  // the values of the matrix
+	double* A = NULL;           // the values of the matrix
     int*    I_A = NULL;         // the row indices of the non-zero elements of A
     int*    J_A = NULL;         // the column index of the non-zero elements of A
     int     n1, n2;             // size of the matrix A (n1 and n2 should be egal)
@@ -28,6 +29,8 @@ int main(int argc, char* argv[])
 	FILE * output = NULL;
 	omp_set_num_threads(atoi(argv[5]));
 
+	/* Checking if the user has entered the command line argument `--help` or `-h` and if so, it prints
+	out the help message and exits the program. */
 	for (i = 1; i < argc; i++)
 	{
 		if (!memcmp(argv[i],"--help",7) || !memcmp(argv[i],"-h",3))
@@ -43,7 +46,9 @@ int main(int argc, char* argv[])
 			exit(EXIT_SUCCESS);
 		} 		
 	}
-    if (argc < 4)
+
+    /* Checking the number of arguments passed to the program. */
+	if (argc < 4)
 	{
 		printf("Pade-Rayleigh-Ritz Algorithm :\n\tErreur : la commande nécessite au moins 3 arguments\n\tUtilisez l'option -h pour plus d'information.\n");
 		exit(EXIT_FAILURE);
@@ -57,9 +62,10 @@ int main(int argc, char* argv[])
 		debug_point = atoi(argv[6]);
 	}
 
-
 	m = atoi(argv[3]);
 	
+	/* Checking if the user has entered a value for m that is less than 2. If so, it prints out an error
+	message and exits the program. */
 	if ( m < 2 )
 	{
 		printf("Pade-Rayleigh-Ritz Algorithm :\n\tErreur : le 3e argument [m] doit être superieur à 1\n\tUtilisez l'option -h pour plus d'information.\n");
@@ -68,18 +74,31 @@ int main(int argc, char* argv[])
 
 	mm_read_unsymmetric_sparse(argv[1], &n1, &n2, &nz, &A, &I_A, &J_A);
 
-    if ( n1 != n2 )
+    /* Checking if the matrix is square. */
+	if ( n1 != n2 )
     {
         printf("Pade-Rayleigh-Ritz Algorithm :\n\tErreur : La matrice d'entrée doit être carré\n");
         exit(EXIT_FAILURE);
     }
+
+	/* Checking if the value of m is greater than or equal to the size of the input matrix. If so, it
+	prints out an error message and exits the program. */
 	if ( m >= n1 )
 	{
         printf("Pade-Rayleigh-Ritz Algorithm :\n\tErreur : La valeur de m ne peut pas être supérieure ou égale à la taille de la matrice en entrée\n");
         exit(EXIT_FAILURE);
     }
 	
-	
+	// double* test = (double*) calloc(n2*n2,sizeof(double));
+	// double* q = (double*) calloc(n2*m,sizeof(double));
+	// double* lambda = (double*) calloc(m,sizeof(double));
+	// printf("test\n");
+	// for (int i = 0; i < nz; i++)
+	// {
+	// 	test[I_A[i]*n1+J_A[i]] = A[i];
+	// }
+	// calculer_elements_propres(test,  n1, &lambda, &q);
+	// print_matrice("q",q,n1,m);
 	
 	t0 = omp_get_wtime(); 
 	t0_cpu = clock(); 
@@ -96,7 +115,8 @@ int main(int argc, char* argv[])
 
 
 
-    printf("\nEcriture des vecteurs propres approchés de A dans \"%s\"... ",argv[2]);
+    /* Writing the eigen vectors to a file. */
+	printf("\nEcriture des vecteurs propres approchés de A dans \"%s\"... ",argv[2]);
     output = fopen(argv[2], "w+");
     for(i = 0; i < n1; i++)
     {
@@ -108,9 +128,8 @@ int main(int argc, char* argv[])
     }
     printf("Terminé\n");
 
-
-	
-    fclose(output);
+    /* Closing the file and freeing the memory. */
+	fclose(output);
 	free(A);
 	free(I_A);
 	free(J_A);
