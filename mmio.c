@@ -25,7 +25,10 @@ int mm_read_unsymmetric_sparse(const char *fname, int *M_, int *N_, int *nz_,
     int *Mat_I, *Mat_J;
  
     if ((f = fopen(fname, "r")) == NULL)
+    {
+            printf("mm_read_unsymetric: le fichier [%s] n'existe pas\n", fname);
             return -1;
+    }
  
  
     if (mm_read_banner(f, &matcode) != 0)

@@ -89,7 +89,10 @@ int main(int argc, char* argv[])
 		exit(EXIT_FAILURE);
 	}
 
-	mm_read_unsymmetric_sparse(argv[1], &n1, &n2, &nz, &A, &I_A, &J_A);
+	if ( mm_read_unsymmetric_sparse(argv[1], &n1, &n2, &nz, &A, &I_A, &J_A) == -1)
+	{
+		exit(EXIT_FAILURE);
+	}
 
     /* Checking if the matrix is square. */
 	if ( n1 != n2 )
