@@ -22,6 +22,8 @@ sudo apt-get install libgsl-dev
 Installer le projet avec le makefile
 
 ```bash
+  tar xvf simon_neto_ppd.tgz
+  cd projet_ppd_simon_neto
   make
 ```
     
