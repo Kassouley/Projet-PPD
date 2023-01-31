@@ -48,72 +48,66 @@ double* PRR(double* A, int* I_A, int* J_A, int nz, int n, unsigned int m, double
     ui      = (double*) malloc(m*m* sizeof(double));
     qi      = (double*) calloc(n*m, sizeof(double));
     
-	
-    /** Initialisation of x */
+	/** Initialisation of x */
 	#pragma omp parallel for private(i)
 	for (i = 0; i < n; i++)
 	{
-		x[i]=0;
+		x[i]=1;
 	}
 	x[0]=1;
 
-	#pragma omp parallel
+	do
 	{
-		#pragma omp single 
+		normalisation(&y0, x, n);	// Normalisation du vecteur y0
+		projection(A, I_A, J_A, nz, n, m, y0, &Bm, &Bm_1, &Vm);		// Projection et calcule de Bm, Bm-1 et Vm
+
+/* DEBUG ZONE : START */
+		if(compteur == debug_point)
 		{
-			do
-			{
-				normalisation(&y0, x, n);	// Normalisation du vecteur y0
-				projection(A, I_A, J_A, nz, n, m, y0, &Bm, &Bm_1, &Vm);		// Projection et calcule de Bm, Bm-1 et Vm
-
-/* DEBUG ZONE : START */
-				if(compteur == debug_point)
-				{
-					print_matrice("x", x, n, 1);
-					print_matrice("y0",y0, n, 1);
-					print_matrice("Bm", Bm, m, m);
-					print_matrice("Bm-1", Bm_1, m, m);
-					print_matrice("Vm", Vm, n, m);
-				}
-/* DEBUG ZONE : END */
-
-				inverse(&Em, Bm_1, m);		// Calcule de Em (inverse de Bm-1)
-				produit_matrice_matrice(&Fm, Em, Bm, m, m);		// Calcule de Fm (produit matriciel Em x Bm)
-				
-/* DEBUG ZONE : START */
-				if(compteur == debug_point)
-				{
-					print_matrice("Em", Em,m,m);
-					print_matrice("Fm", Fm,m,m);
-				}
-/* DEBUG ZONE : END */
-
-				calculer_elements_propres(Fm,  m, &lambda, &ui);	// Calcule des élements propres
-				produit_matrice_matrice(&qi, Vm, ui, n, m);		// Calcule des approximations des vecteur propre de A
-
-/* DEBUG ZONE : START */
-				if(compteur == debug_point)
-				{
-					print_matrice("Eigein vector", ui,m,m);
-					print_matrice("Eigein value", lambda,m,1);
-					print_matrice("qi", qi, n, m);
-					break;
-				}
-/* DEBUG ZONE : END */
-				
-				printf("compteur : %d \t", compteur);
-				est_precis = est_precision_suffisante(precision, A, I_A, J_A, nz, qi, lambda, n, m);
-				if (!est_precis)
-				{
-					combinaison_lineaire(&x, qi, n, m);
-				}
-
-				
-				compteur++;
-				
-			} while (!est_precis && compteur < MAX_ITERATION);
+			print_matrice("x", x, n, 1);
+			print_matrice("y0",y0, n, 1);
+			print_matrice("Bm", Bm, m, m);
+			print_matrice("Bm-1", Bm_1, m, m);
+			print_matrice("Vm", Vm, n, m);
 		}
-	}
+/* DEBUG ZONE : END */
+
+		inverse(&Em, Bm_1, m);		// Calcule de Em (inverse de Bm-1)
+		produit_matrice_matrice(&Fm, Em, Bm, m, m);		// Calcule de Fm (produit matriciel Em x Bm)
+		
+/* DEBUG ZONE : START */
+		if(compteur == debug_point)
+		{
+			print_matrice("Em", Em,m,m);
+			print_matrice("Fm", Fm,m,m);
+		}
+/* DEBUG ZONE : END */
+
+		calculer_elements_propres(Fm,  m, &lambda, &ui);	// Calcule des élements propres
+		produit_matrice_matrice(&qi, Vm, ui, n, m);		// Calcule des approximations des vecteur propre de A
+
+/* DEBUG ZONE : START */
+		if(compteur == debug_point)
+		{
+			print_matrice("Eigein vector", ui,m,m);
+			print_matrice("Eigein value", lambda,m,1);
+			print_matrice("qi", qi, n, m);
+			exit(EXIT_SUCCESS);
+		}
+/* DEBUG ZONE : END */
+		
+		printf("compteur : %d \t", compteur);
+		est_precis = est_precision_suffisante(precision, A, I_A, J_A, nz, qi, lambda, n, m);
+		if (!est_precis)
+		{
+			combinaison_lineaire(&x, qi, n, m);
+		}
+
+		
+		compteur++;
+		
+	} while (!est_precis && compteur < MAX_ITERATION);
+
 
 	if (compteur >= MAX_ITERATION)
 	{

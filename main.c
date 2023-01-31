@@ -18,6 +18,7 @@ int main(int argc, char* argv[])
     int     n1, n2;             // size of the matrix A (n1 and n2 should be egal)
     int     nz;                 // number of non-zero elements in the matrix
 	int 	m ;
+	int		nb_threads = 1;
 	double 	precision = 0.1;
 	double*	A_eigen_vector = NULL;
 	double t0; 
@@ -27,7 +28,6 @@ int main(int argc, char* argv[])
 	double temps_reel;
 	double temps_CPU;
 	FILE * output = NULL;
-	omp_set_num_threads(atoi(argv[5]));
 
 	/* Checking if the user has entered the command line argument `--help` or `-h` and if so, it prints
 	out the help message and exits the program. */
@@ -37,11 +37,13 @@ int main(int argc, char* argv[])
 		{
 			printf("Pade-Rayleigh-Ritz Algorithm :\n\n");
 			printf("Programme calculant les vecteurs propres approchés d'une grand matrice carré creuse.\n\n");
-			printf("Utilisation :\n\t./PRR [matrix_file.mtx] [output_file] [m] {epsilon}\n\n");
+			printf("Utilisation :\n\t./PRR [matrix_file.mtx] [output_file] [m] {epsilon} {nbThread} {debugPoint}\n\n");
 			printf("[matrix_file.mtx]\tFichier .mtx vers la matrice carré creuse\n");
 			printf("[output_file]\t\tFichier dans le quel stocker les vecteurs propres approchés\n");
 			printf("[m]\t\t\tTaille du sous-espace généré\n");
-			printf("{epsilon}\t\tPrecision des vecteurs approchés. (Default : 0.1)\n");
+			printf("{epsilon}\t\tPrecision des vecteurs approchés (Default : 0.1)\n");
+			printf("{nbThread}\t\tNombre de threads (Default : 1)\n");
+			printf("{debugPoint}\t\tPermet d'afficher les matrices de la n ème itération de l'algorithme (Default : -1, n'affiche pas)\n");
 			printf("\n");
 			exit(EXIT_SUCCESS);
 		} 		
@@ -57,11 +59,26 @@ int main(int argc, char* argv[])
 	{
 		precision = atof(argv[4]);
 	}
+	if ( argc >= 6 )
+	{
+		nb_threads = atoi(argv[5]);
+		if (nb_threads < 1)
+		{
+			printf("Pade-Rayleigh-Ritz Algorithm :\n\tErreur : le nombre de thread doit être supérieur à 0\n\tUtilisez l'option -h pour plus d'information.\n");
+			exit(EXIT_FAILURE);
+		}
+	}
 	if ( argc >= 7 )
 	{
 		debug_point = atoi(argv[6]);
+		if (debug_point < 0)
+		{
+			printf("Pade-Rayleigh-Ritz Algorithm :\n\tErreur : le debug point doit être supérieur ou égal à 0\n\tUtilisez l'option -h pour plus d'information.\n");
+			exit(EXIT_FAILURE);
+		}
 	}
 
+	omp_set_num_threads(nb_threads);
 	m = atoi(argv[3]);
 	
 	/* Checking if the user has entered a value for m that is less than 2. If so, it prints out an error
@@ -89,31 +106,19 @@ int main(int argc, char* argv[])
         exit(EXIT_FAILURE);
     }
 	
-	// double* test = (double*) calloc(n2*n2,sizeof(double));
-	// double* q = (double*) calloc(n2*m,sizeof(double));
-	// double* lambda = (double*) calloc(m,sizeof(double));
-	// printf("test\n");
-	// for (int i = 0; i < nz; i++)
-	// {
-	// 	test[I_A[i]*n1+J_A[i]] = A[i];
-	// }
-	// calculer_elements_propres(test,  n1, &lambda, &q);
-	// print_matrice("q",q,n1,m);
-	
+	/* Getting the time at the start of the program. */
 	t0 = omp_get_wtime(); 
 	t0_cpu = clock(); 
 
+	/* Calling the PRR function and storing the result in the A_eigen_vector variable. */
 	A_eigen_vector = PRR(A, I_A, J_A, nz, n1, m, precision);
 
+	/* Calculating the time taken by the program to run. */
 	t1 = omp_get_wtime(); 
 	t1_cpu = clock(); 
 	temps_reel= t1 - t0;
 	temps_CPU=(t1_cpu-t0_cpu)/CLOCKS_PER_SEC;
-
     printf("Temps d'execution : %f secondes / %f clocks\n", temps_reel,temps_CPU);
-
-
-
 
     /* Writing the eigen vectors to a file. */
 	printf("\nEcriture des vecteurs propres approchés de A dans \"%s\"... ",argv[2]);
